@@ -1,0 +1,58 @@
+version: 2
+
+models:
+  - name: stg_crimes
+    description: "Cleaned and type-cast crime records from raw.crimes"
+    columns:
+      - name: crime_id
+        description: "SHA hash identifying the crime. NULL for anti-social behaviour records."
+      - name: month
+        description: "Reporting month in YYYY-MM format"
+        tests:
+          - not_null
+      - name: year
+        description: "Calendar year derived from month"
+        tests:
+          - not_null
+      - name: month_num
+        description: "Calendar month number (1-12)"
+        tests:
+          - not_null
+      - name: force
+        description: "Police force name"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - west-yorkshire
+                - greater-manchester
+                - metropolitan
+                - west-midlands
+      - name: crime_type
+        description: "ONS crime category"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - Anti-social behaviour
+                - Bicycle theft
+                - Burglary
+                - Criminal damage and arson
+                - Drugs
+                - Other crime
+                - Other theft
+                - Possession of weapons
+                - Public order
+                - Robbery
+                - Shoplifting
+                - Theft from the person
+                - Vehicle crime
+                - Violence and sexual offences
+      - name: last_outcome
+        description: "Most recent case outcome"
+        tests:
+          - not_null
+      - name: longitude
+        description: "WGS84 longitude"
+      - name: latitude
+        description: "WGS84 latitude"

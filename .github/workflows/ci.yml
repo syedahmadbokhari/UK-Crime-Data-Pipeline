@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install \
+            pandas duckdb boto3 moto pytest pytest-mock \
+            loguru python-dotenv python-dateutil requests
+
+      - name: Run pytest
+        run: pytest tests/ -v --tb=short
+        env:
+          WATERMARK_FILE: /tmp/watermark.json
+          DUCKDB_PATH: /tmp/crime_test.duckdb
+          RAW_DATA_DIR: /tmp/raw
+
+  dbt-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dbt-duckdb
+        run: pip install dbt-duckdb==1.7.0
+
+      - name: dbt compile (syntax check)
+        working-directory: dbt_crime
+        run: dbt compile --profiles-dir . --target dev
+        env:
+          DUCKDB_PATH: /tmp/crime_ci.duckdb

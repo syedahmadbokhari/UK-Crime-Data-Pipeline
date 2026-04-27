@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: crime_by_category
+    description: "Monthly crime counts by force and crime type"
+    columns:
+      - name: month
+        tests: [not_null]
+      - name: force
+        tests: [not_null]
+      - name: crime_type
+        tests: [not_null]
+      - name: total_crimes
+        tests: [not_null]
+
+  - name: crime_by_month
+    description: "Total monthly crime counts per force with YoY comparison"
+    columns:
+      - name: month
+        tests: [not_null]
+      - name: force
+        tests: [not_null]
+      - name: total_crimes
+        tests: [not_null]
+
+  - name: crime_by_force
+    description: "Force-level performance metrics per month"
+    columns:
+      - name: force
+        tests: [not_null]
+      - name: month
+        tests: [not_null]
+
+  - name: crime_hotspots
+    description: "LSOA-level hotspot aggregations for geospatial mapping"
+    columns:
+      - name: lsoa_code
+        tests: [not_null]
+      - name: total_crimes
+        tests: [not_null]
+      - name: hotspot_tier
+        tests:
+          - accepted_values:
+              values: [High, Medium, Low]

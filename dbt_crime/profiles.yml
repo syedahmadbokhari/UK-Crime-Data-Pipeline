@@ -1,0 +1,11 @@
+dbt_crime:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', '../warehouse/crime.duckdb') }}"
+      threads: 4
+    prod:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', '../warehouse/crime.duckdb') }}"
+      threads: 4

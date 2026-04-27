@@ -1,0 +1,49 @@
+# Environment
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# DuckDB database files
+*.duckdb
+*.duckdb.wal
+
+# dbt
+dbt_crime/target/
+dbt_crime/dbt_packages/
+dbt_crime/logs/
+
+# Airflow
+logs/
+airflow.db
+airflow.cfg
+
+# Data files (raw CSVs — commit schema only, not bulk data)
+data/raw/*.csv
+
+# Duplicate data folder created by data.police.uk download
+2026-02/
+
+# Runtime state
+warehouse/watermark.json
+warehouse/__pycache__/
+
+# pytest cache
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
