@@ -13,8 +13,8 @@ venv/
 env/
 
 # DuckDB database files
-*.duckdb
 *.duckdb.wal
+# warehouse/crime.duckdb is committed so Streamlit Cloud can serve the dashboard
 
 # dbt
 dbt_crime/target/
