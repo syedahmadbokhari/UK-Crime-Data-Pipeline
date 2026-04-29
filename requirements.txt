@@ -31,3 +31,6 @@ moto==5.0.0           # Mock AWS S3 for tests
 python-dotenv==1.0.0
 requests==2.31.0
 loguru==0.7.2
+
+# AI Report Generator
+google-genai>=0.3.0
