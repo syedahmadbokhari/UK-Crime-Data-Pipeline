@@ -8,6 +8,8 @@ and a geospatial Streamlit dashboard — with an AI-powered crime report generat
 
 **Live app:** https://uk-crime-data-pipeline-mqev8qeujqyu2o5wtagkc4.streamlit.app/
 
+**GitHub:** https://github.com/syedahmadbokhari/UK-Crime-Data-Pipeline
+
 ---
 
 ## Business Context
