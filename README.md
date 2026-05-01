@@ -2,7 +2,11 @@
 
 End-to-end data engineering project built on publicly available UK Police crime data.
 Covers cloud ingestion, a DuckDB warehouse, dbt transformations, Airflow orchestration,
-and a geospatial Streamlit dashboard.
+and a geospatial Streamlit dashboard — with an AI-powered crime report generator.
+
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://uk-crime-data-pipeline-mqev8qeujqyu2o5wtagkc4.streamlit.app/)
+
+**Live app:** https://uk-crime-data-pipeline-mqev8qeujqyu2o5wtagkc4.streamlit.app/
 
 ---
 
