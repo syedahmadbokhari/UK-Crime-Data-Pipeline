@@ -2,16 +2,16 @@
 # For local pipeline dev install requirements-dev.txt instead
 
 # Dashboard
-streamlit==1.31.0
-duckdb==0.10.0
-pandas==2.2.0
-plotly==5.18.0
-folium==0.15.1
-streamlit-folium==0.18.0
+streamlit>=1.31.0
+duckdb>=0.10.0
+pandas>=2.2.0
+plotly>=5.18.0
+folium>=0.15.1
+streamlit-folium>=0.18.0
 
 # AI Report Generator
 google-genai>=0.3.0
 
 # Utilities
-python-dotenv==1.0.0
-loguru==0.7.2
+python-dotenv>=1.0.0
+loguru>=0.7.2
