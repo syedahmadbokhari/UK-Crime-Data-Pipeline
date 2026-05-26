@@ -45,7 +45,7 @@ def main() -> None:
     args = _parse_args()
     _configure_logging(args.verbose)
 
-    print("\n── AI Crime Report Generator " + "─" * 33)
+    print("\n-- AI Crime Report Generator " + "-" * 33)
 
     try:
         df = load_crime_data(args.filepath)
@@ -79,9 +79,9 @@ def main() -> None:
     saved = save_report(report, features, output_dir=args.output_dir, json_export=args.json)
     print(f"  Saved   : {saved}")
 
-    print("\n── Report " + "─" * 52)
+    print("\n-- Report " + "-" * 52)
     print(report)
-    print("─" * 62 + "\n")
+    print("-" * 62 + "\n")
 
 
 if __name__ == "__main__":

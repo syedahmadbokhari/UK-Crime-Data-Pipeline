@@ -32,6 +32,26 @@ jobs:
           DUCKDB_PATH: /tmp/crime_test.duckdb
           RAW_DATA_DIR: /tmp/raw
 
+  api-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install API dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run API tests
+        run: pytest tests/ -v --tb=short
+
   dbt-compile:
     runs-on: ubuntu-latest
     steps:

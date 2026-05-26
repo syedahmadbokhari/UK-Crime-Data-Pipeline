@@ -22,7 +22,7 @@ def generate_report(
     system: str,
     user: str,
     model: str = DEFAULT_MODEL,
-    max_tokens: int = 600,
+    max_tokens: int = 2000,
     temperature: float = DEFAULT_TEMPERATURE,
 ) -> str:
     """Send a prompt to the Gemini API and return the generated report text.
