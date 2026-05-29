@@ -6,7 +6,9 @@ and a geospatial Streamlit dashboard — with an AI-powered crime report generat
 
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://uk-crime-data-pipeline-mqev8qeujqyu2o5wtagkc4.streamlit.app/)
 
-**Live app:** https://uk-crime-data-pipeline-mqev8qeujqyu2o5wtagkc4.streamlit.app/
+**Live dashboard:** https://uk-crime-data-pipeline-mqev8qeujqyu2o5wtagkc4.streamlit.app/
+
+**Live API (Swagger docs):** https://uk-crime-data-pipeline-production.up.railway.app/docs
 
 **GitHub:** https://github.com/syedahmadbokhari/UK-Crime-Data-Pipeline
 
@@ -119,6 +121,7 @@ CI/CD:         GitHub Actions — pytest + dbt compile on every push
 | Testing | pytest + moto | Mocked S3, in-memory DuckDB |
 | CI/CD | GitHub Actions | pytest + dbt compile on every push |
 | Dashboard | Streamlit + Folium | Interactive charts and geospatial map |
+| REST API | FastAPI + SQLAlchemy | JWT-authenticated endpoints, deployed on Railway |
 
 ---
 
