@@ -107,6 +107,16 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   crime-api:
     build:
       context: ./api
@@ -116,10 +126,17 @@ services:
     environment:
       DATABASE_URL: postgresql://crimes:crimes@crimes-api-db:5432/crimes_api
       SECRET_KEY: ${API_SECRET_KEY:-dev-secret-key-change-in-production}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      REDIS_URL: redis://redis:6379/0
+      CACHE_TTL_SECONDS: 300
+      RATE_LIMIT_DEFAULT: 100/minute
+      RATE_LIMIT_EXPENSIVE: 20/minute
     volumes:
       - ./data:/app/data
     depends_on:
       crimes-api-db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
 volumes:
