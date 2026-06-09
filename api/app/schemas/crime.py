@@ -1,5 +1,5 @@
-from pydantic import BaseModel
 from typing import Optional
+from pydantic import BaseModel
 
 
 class CrimeResponse(BaseModel):
@@ -23,8 +23,16 @@ class CrimeSummary(BaseModel):
     under_investigation_pct: float
 
 
+# Offset pagination (legacy — kept for backward compatibility)
 class PaginatedCrimes(BaseModel):
     total: int
     page: int
     page_size: int
     results: list[CrimeResponse]
+
+
+# Cursor pagination (preferred for large datasets)
+class CursorPaginatedCrimes(BaseModel):
+    data: list[CrimeResponse]
+    next_cursor: Optional[int] = None
+    has_more: bool

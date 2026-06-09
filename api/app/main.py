@@ -1,21 +1,25 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
+from app.config import settings
 from app.database import Base, engine
+from app.middleware.cors import add_cors
 from app.middleware.logging import LoggingMiddleware
 from app.middleware.rate_limit import limiter
 from app.routers import auth, crimes, health, reports
 
+logging.basicConfig(level=getattr(logging, settings.log_level.upper(), logging.INFO))
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Tables are managed by Alembic migrations (alembic upgrade head).
-    # create_all is kept as a fallback for local dev without a migration run.
+    # Tables managed by Alembic (alembic upgrade head).
+    # create_all kept as fallback for local dev without a migration run.
     Base.metadata.create_all(bind=engine)
     yield
 
@@ -23,24 +27,26 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Crime Data API",
     description=(
-        "REST API for UK Police crime data. "
-        "Provides filtering, pagination, force-level summaries, "
-        "AI-generated briefing reports, and natural language crime queries. "
-        "Protected endpoints require JWT authentication."
+        "Production-grade REST API for UK Police crime data. "
+        "Features: JWT auth, rate limiting, Redis caching, async SQLAlchemy, "
+        "AI-generated briefing reports, natural language RAG queries, "
+        "cursor pagination, and background job processing."
     ),
-    version="2.0.0",
+    version=settings.app_version,
     lifespan=lifespan,
 )
 
-# Middleware (added in reverse order — last added runs first)
+# ── Middleware (last added = first to run) ────────────────────────────────────
+add_cors(app)
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(SlowAPIMiddleware)
 
-# Rate limiting
+# ── Rate limiting ─────────────────────────────────────────────────────────────
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-app.include_router(health.router)
-app.include_router(auth.router)
-app.include_router(crimes.router)
-app.include_router(reports.router)
+# ── Routers ───────────────────────────────────────────────────────────────────
+app.include_router(health.router)                              # /health, /health/ready
+app.include_router(auth.router, prefix=settings.api_prefix)   # /api/v1/auth/...
+app.include_router(crimes.router, prefix=settings.api_prefix) # /api/v1/crimes/...
+app.include_router(reports.router, prefix=settings.api_prefix) # /api/v1/reports/...
