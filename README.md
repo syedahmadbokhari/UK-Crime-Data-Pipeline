@@ -1,16 +1,21 @@
 # UK Crime Data Pipeline
 
+[![CI](https://github.com/syedahmadbokhari/UK-Crime-Data-Pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/syedahmadbokhari/UK-Crime-Data-Pipeline/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![dbt](https://img.shields.io/badge/dbt-1.7-FF694B?logo=dbt&logoColor=white)](https://www.getdbt.com/)
+[![Docker](https://img.shields.io/badge/Docker-multi--stage-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 End-to-end data engineering project built on publicly available UK Police crime data.
 Covers cloud ingestion, a DuckDB warehouse, dbt transformations, Airflow orchestration,
 and a geospatial Streamlit dashboard — with an AI-powered crime report generator.
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://uk-crime-data-pipeline-mqev8qeujqyu2o5wtagkc4.streamlit.app/)
-
-**Live dashboard:** https://uk-crime-data-pipeline-mqev8qeujqyu2o5wtagkc4.streamlit.app/
-
-**Live API (Swagger docs):** https://uk-crime-data-pipeline-production.up.railway.app/docs
-
-**GitHub:** https://github.com/syedahmadbokhari/UK-Crime-Data-Pipeline
+| | |
+|---|---|
+| **Live Dashboard** | [![Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://uk-crime-data-pipeline-mqev8qeujqyu2o5wtagkc4.streamlit.app/) |
+| **Live API (Swagger)** | https://uk-crime-data-pipeline-production.up.railway.app/docs |
+| **GitHub** | https://github.com/syedahmadbokhari/UK-Crime-Data-Pipeline |
 
 ---
 
