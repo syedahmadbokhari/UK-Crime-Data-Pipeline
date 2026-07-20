@@ -127,6 +127,7 @@ CI/CD:         GitHub Actions — pytest + dbt compile on every push
 | CI/CD | GitHub Actions | pytest + dbt compile on every push |
 | Dashboard | Streamlit + Folium | Interactive charts and geospatial map |
 | REST API | FastAPI + SQLAlchemy | JWT-authenticated endpoints, deployed on Railway |
+| IaC | Terraform | Provisions the S3 bucket + least-privilege IAM, replacing manual console setup |
 
 ---
 
@@ -185,6 +186,32 @@ docker-compose up
 # Airflow UI: http://localhost:8080 (admin/admin)
 # Dashboard:  http://localhost:8501
 ```
+
+---
+
+## Infrastructure as Code (Terraform)
+
+The AWS side of this project — the S3 bucket and the IAM policy/user that read and write it — can now
+be provisioned with Terraform instead of clicking through the AWS console:
+
+```bash
+cd terraform
+terraform init
+terraform plan -var="bucket_name=your-globally-unique-bucket-name"
+terraform apply -var="bucket_name=your-globally-unique-bucket-name"
+```
+
+This replaces the manual "create a bucket and an IAM user in the console" step referenced in Quick
+Start step 2 — take the `bucket_name` output and put it in `.env` as `S3_BUCKET_NAME`, same as before.
+
+**What it does NOT cover:** Airflow, Postgres, Redis, and the FastAPI service are unchanged — they
+remain entirely Docker Compose-based (`docker-compose.yml`), same as always. Terraform here is scoped
+strictly to the S3 bucket + IAM, not the rest of the stack.
+
+`terraform apply` creates real AWS resources and may incur (typically small) AWS costs — it's a
+manual, deliberate step, not something CI or any script runs for you. Full details, the exact IAM
+permissions granted and why, and the reasoning behind each bucket setting are in
+[terraform/README.md](terraform/README.md).
 
 ---
 
