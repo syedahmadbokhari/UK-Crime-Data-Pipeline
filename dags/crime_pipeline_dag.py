@@ -94,6 +94,20 @@ def _validate_loaded(force: str, **ctx) -> None:
         raise ValueError(f"raw.crimes has 0 rows for {force} {month} after load")
 
 
+def _validate_quality_ge(force: str, **ctx) -> None:
+    """
+    Run the Great Expectations suite (data_quality/validate_raw_crimes.py)
+    against this force+month's raw.crimes partition. Formalizes/extends the
+    manual checks _validate_raw and _validate_loaded already perform, so it
+    runs right after them and before dbt sees the data.
+    """
+    from data_quality.validate_raw_crimes import validate_partition
+    month = _get_target_month(**ctx)
+    result = validate_partition(force, month)
+    if not result.success:
+        raise ValueError(f"Great Expectations validation failed for {force} {month}")
+
+
 def _update_watermark(force: str, **ctx) -> None:
     from ingestion.watermark import set_watermark
     month = _get_target_month(**ctx)
@@ -143,6 +157,12 @@ with DAG(
             op_kwargs={"force": force},
         )
 
+        t_validate_quality_ge = PythonOperator(
+            task_id=f"validate_quality_ge_{safe_force}",
+            python_callable=_validate_quality_ge,
+            op_kwargs={"force": force},
+        )
+
         t_dbt_run = BashOperator(
             task_id=f"dbt_run_{safe_force}",
             bash_command=(
@@ -171,6 +191,7 @@ with DAG(
             >> t_upload_s3
             >> t_load_duckdb
             >> t_validate_loaded
+            >> t_validate_quality_ge
             >> t_dbt_run
             >> t_dbt_test
             >> t_watermark

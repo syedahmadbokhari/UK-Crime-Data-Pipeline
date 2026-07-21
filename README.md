@@ -84,9 +84,10 @@ CI/CD:         GitHub Actions — pytest + dbt compile on every push
 | Mart: trend | [dbt_crime/models/marts/crime_by_month.sql](dbt_crime/models/marts/crime_by_month.sql) | Monthly totals with YoY % change |
 | Mart: force | [dbt_crime/models/marts/crime_by_force.sql](dbt_crime/models/marts/crime_by_force.sql) | Outcome rates (resolved / no suspect / open) per force |
 | Mart: hotspots | [dbt_crime/models/marts/crime_hotspots.sql](dbt_crime/models/marts/crime_hotspots.sql) | LSOA centroid + crime breakdown + High/Medium/Low tier |
-| DAG | [dags/crime_pipeline_dag.py](dags/crime_pipeline_dag.py) | 8-task Airflow DAG with validation gates and watermark update |
+| DAG | [dags/crime_pipeline_dag.py](dags/crime_pipeline_dag.py) | 9-task Airflow DAG with validation gates and watermark update |
+| Data Quality | [data_quality/validate_raw_crimes.py](data_quality/validate_raw_crimes.py) | Great Expectations suite for raw.crimes, run as a DAG task |
 | Dashboard | [dashboard/app.py](dashboard/app.py) | Streamlit: trends, breakdown, Folium map, force comparison |
-| Tests | [tests/](tests/) | 20+ pytest tests — mocked S3, in-memory DuckDB |
+| Tests | [tests/](tests/) | 30+ pytest tests — mocked S3, in-memory DuckDB, GE suite |
 | CI | [.github/workflows/ci.yml](.github/workflows/ci.yml) | pytest + dbt compile on push |
 
 ---
@@ -128,6 +129,7 @@ CI/CD:         GitHub Actions — pytest + dbt compile on every push
 | Dashboard | Streamlit + Folium | Interactive charts and geospatial map |
 | REST API | FastAPI + SQLAlchemy | JWT-authenticated endpoints, deployed on Railway |
 | IaC | Terraform | Provisions the S3 bucket + least-privilege IAM, replacing manual console setup |
+| Data Quality | Great Expectations | Formalizes the pipeline's hand-written validation into an Expectation Suite + Data Docs |
 
 ---
 
@@ -215,6 +217,66 @@ permissions granted and why, and the reasoning behind each bucket setting are in
 
 ---
 
+## Data Quality (Great Expectations)
+
+The pipeline already had hand-written data quality checks scattered across a few places:
+[dags/crime_pipeline_dag.py](dags/crime_pipeline_dag.py)'s `_validate_raw`/`_validate_loaded`
+row-count gates, `accepted_values`/`not_null` tests in
+[dbt_crime/models/staging/schema.yml](dbt_crime/models/staging/schema.yml), and a silent
+`WHERE month IS NOT NULL AND crime_type IS NOT NULL` filter in
+[stg_crimes.sql](dbt_crime/models/staging/stg_crimes.sql) that drops bad rows with no
+visibility. [data_quality/validate_raw_crimes.py](data_quality/validate_raw_crimes.py)
+formalizes those into a single Great Expectations suite that runs against `raw.crimes`
+right after the DuckDB load — the one point in the flow where none of the existing checks
+looked at column-level validity before dbt got the data.
+
+**Honestly, most of this is formalization, not brand-new validation:**
+
+| Expectation | Status |
+|---|---|
+| Row count ≥ 100 | Formalizes `_validate_raw`'s existing threshold |
+| Required columns exist | Formalizes `test_schema_has_required_columns` |
+| `month` / `crime_type` not null | Formalizes + **strengthens** — previously just a silent filter in `stg_crimes.sql`, now a loud, gating check |
+| `force` not null | Formalizes the dbt schema.yml test |
+| `force` in the 4 known forces | Formalizes dbt's `accepted_values` + `download_data.py`'s `SUPPORTED_FORCES`, shifted earlier in the pipeline |
+| `crime_type` in the 14 ONS categories | Formalizes dbt's `accepted_values` + `test_known_crime_types_only` |
+| **Longitude/latitude within the UK bounding box** | **Genuinely new** — nothing previously checked coordinates were plausible, only that they parsed as a float |
+| **`crime_id` unique among non-null values** | **Genuinely new** — formalizes an invariant `load_local_csv`'s dedup logic already assumed but never asserted |
+
+None of the existing checks were removed — dbt's schema tests and the DAG's row-count gates
+still run exactly as before. This is an additional, earlier gate, not a replacement.
+
+### Running it locally
+
+Requires `great_expectations` from `requirements-dev.txt` (not in the lighter `requirements.txt`
+used for the Streamlit Cloud deployment):
+
+```bash
+pip install -r requirements-dev.txt
+python -m data_quality.validate_raw_crimes
+# or a single force+month partition:
+python -m data_quality.validate_raw_crimes --force west-yorkshire --month 2026-02
+```
+
+This validates whatever's currently in your local DuckDB warehouse and builds Data Docs —
+GE's HTML validation report. Open it at:
+
+```
+great_expectations/uncommitted/data_docs/local_site/index.html
+```
+
+(`great_expectations/uncommitted/` is gitignored — Data Docs and validation run history are
+regenerated locally/in CI, not committed, since they can contain raw data values.)
+
+### In the pipeline
+
+Airflow runs this as its own task (`validate_quality_ge_<force>`), positioned right after
+`validate_loaded_<force>` and before `dbt_run_<force>` in each force's task chain — same
+spot the existing manual quality gate already ran, just with a formal suite instead of a
+bare row-count check.
+
+---
+
 ## Running Tests
 
 ```bash
@@ -228,6 +290,8 @@ Tests cover:
 - Data quality checks (null months, unknown crime types, schema columns)
 - Row count gate validation
 - Incremental load across multiple forces
+- The Great Expectations suite catching malformed categories, unknown forces, out-of-range
+  coordinates, and duplicate crime IDs against synthetic data (no real DuckDB/AWS needed)
 
 ---
 

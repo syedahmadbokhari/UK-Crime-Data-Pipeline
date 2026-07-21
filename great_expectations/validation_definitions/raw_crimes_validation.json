@@ -1,0 +1,22 @@
+{
+  "data": {
+    "asset": {
+      "id": "eb13a213-ebc5-4346-9ba2-5f5b9c85c244",
+      "name": "raw_crimes"
+    },
+    "batch_definition": {
+      "id": "fbd1f1f6-fd39-43f8-91d9-3fd6312232aa",
+      "name": "raw_crimes_batch"
+    },
+    "datasource": {
+      "id": "8fa5fd3c-0d52-42b6-9455-6481b6a57c4f",
+      "name": "pandas_datasource"
+    }
+  },
+  "id": "8329ab12-4422-4d1a-ad5a-f3cd1b47839b",
+  "name": "raw_crimes_validation",
+  "suite": {
+    "id": "e0840d9b-f4d1-4407-8b59-a6e02e4ba2b3",
+    "name": "raw_crimes_suite"
+  }
+}

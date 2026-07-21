@@ -54,3 +54,7 @@ terraform/terraform.tfstate
 terraform/terraform.tfstate.*
 terraform/terraform.tfvars
 terraform/*.tfplan
+
+# Great Expectations (Data Docs + validation run history — regenerated locally,
+# and validation output can contain raw crime data values, so it isn't committed)
+great_expectations/uncommitted/

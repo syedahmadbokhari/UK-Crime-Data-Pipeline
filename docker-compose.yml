@@ -25,6 +25,8 @@ x-airflow-common: &airflow-common
     - ./warehouse:/opt/airflow/warehouse
     - ./dbt_crime:/opt/airflow/dbt_crime
     - ./data:/opt/airflow/data
+    - ./data_quality:/opt/airflow/data_quality
+    - ./great_expectations:/opt/airflow/great_expectations
     - airflow-logs:/opt/airflow/logs
   depends_on:
     postgres:
@@ -52,7 +54,7 @@ services:
     command:
       - -c
       - |
-        pip install dbt-duckdb boto3 loguru python-dateutil &&
+        pip install dbt-duckdb boto3 loguru python-dateutil great_expectations==1.19.0 &&
         airflow db init &&
         airflow users create \
           --username admin \

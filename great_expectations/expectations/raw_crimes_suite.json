@@ -1,0 +1,171 @@
+{
+  "expectations": [
+    {
+      "id": "c219f491-31c8-4440-9359-9c4e63e17c90",
+      "kwargs": {
+        "min_value": 100
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_table_row_count_to_be_between"
+    },
+    {
+      "id": "16605d71-5425-4dcd-a721-8880ad7ae774",
+      "kwargs": {
+        "column": "crime_id"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_to_exist"
+    },
+    {
+      "id": "a16848da-335c-4440-be42-4dc4e510f8fe",
+      "kwargs": {
+        "column": "month"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_to_exist"
+    },
+    {
+      "id": "72b327d7-58ce-44a5-80f2-d70265f4d6cc",
+      "kwargs": {
+        "column": "force"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_to_exist"
+    },
+    {
+      "id": "768dde60-28a8-43ab-9f3b-4f988ecd48db",
+      "kwargs": {
+        "column": "crime_type"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_to_exist"
+    },
+    {
+      "id": "f5cbf893-dbca-43d7-b8dd-8171d65449f6",
+      "kwargs": {
+        "column": "longitude"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_to_exist"
+    },
+    {
+      "id": "20cd4bcd-abc1-458d-8c0f-d9dc6b312635",
+      "kwargs": {
+        "column": "latitude"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_to_exist"
+    },
+    {
+      "id": "2defe7f8-38a1-4308-b867-92b8a58b0a10",
+      "kwargs": {
+        "column": "month"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_not_be_null"
+    },
+    {
+      "id": "485aa36d-ae6d-430c-bb02-fd1585170fb6",
+      "kwargs": {
+        "column": "crime_type"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_not_be_null"
+    },
+    {
+      "id": "4f1431dd-85ca-4a41-9cf1-c20c810c907a",
+      "kwargs": {
+        "column": "force"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_not_be_null"
+    },
+    {
+      "id": "33c0262a-935a-4f20-a299-37851cb01949",
+      "kwargs": {
+        "column": "force",
+        "value_set": [
+          "west-yorkshire",
+          "greater-manchester",
+          "metropolitan",
+          "west-midlands"
+        ]
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_in_set"
+    },
+    {
+      "id": "7830fd1d-bea4-4005-b5e7-aef5f230e64e",
+      "kwargs": {
+        "column": "crime_type",
+        "value_set": [
+          "Anti-social behaviour",
+          "Bicycle theft",
+          "Burglary",
+          "Criminal damage and arson",
+          "Drugs",
+          "Other crime",
+          "Other theft",
+          "Possession of weapons",
+          "Public order",
+          "Robbery",
+          "Shoplifting",
+          "Theft from the person",
+          "Vehicle crime",
+          "Violence and sexual offences"
+        ]
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_in_set"
+    },
+    {
+      "id": "da8e397e-183f-4d84-8a05-99749cec6f04",
+      "kwargs": {
+        "column": "longitude",
+        "max_value": 1.77,
+        "min_value": -8.65
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_between"
+    },
+    {
+      "id": "12bb5d7e-6760-473c-a68a-bc1f7267c005",
+      "kwargs": {
+        "column": "latitude",
+        "max_value": 60.86,
+        "min_value": 49.86
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_between"
+    },
+    {
+      "id": "289777a1-de55-488f-99ac-e2afa2e4055b",
+      "kwargs": {
+        "column": "crime_id"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_unique"
+    }
+  ],
+  "id": "e0840d9b-f4d1-4407-8b59-a6e02e4ba2b3",
+  "meta": {
+    "great_expectations_version": "1.19.0"
+  },
+  "name": "raw_crimes_suite",
+  "notes": null
+}

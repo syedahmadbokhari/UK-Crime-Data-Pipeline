@@ -1,0 +1,31 @@
+{
+  "metadata": {
+    "force": "West Yorkshire Police",
+    "period": "2026-02",
+    "total_crimes": 20007,
+    "generated_at": "2026-05-01T07:59:42.077194"
+  },
+  "source_statistics": {
+    "top_categories": [
+      "Violence and sexual offences",
+      "Anti-social behaviour",
+      "Criminal damage and arson"
+    ],
+    "distribution": {
+      "Violence and sexual offences": 43.0,
+      "Anti-social behaviour": 9.0,
+      "Criminal damage and arson": 7.8,
+      "Public order": 7.7,
+      "Shoplifting": 7.7,
+      "Burglary": 5.4,
+      "Vehicle crime": 4.9,
+      "Other theft": 4.4,
+      "Drugs": 3.3,
+      "Robbery": 2.2,
+      "Bicycle theft": 1.6,
+      "Other crime": 1.5,
+      "Possession of weapons": 1.5
+    }
+  },
+  "report": "Overview\nFor the reporting period of February 2026, West Yorkshire Police recorded a total of"
+}

@@ -23,7 +23,8 @@ jobs:
           pip install --upgrade pip
           pip install \
             pandas duckdb boto3 moto pytest pytest-mock \
-            loguru python-dotenv python-dateutil requests
+            loguru python-dotenv python-dateutil requests \
+            great_expectations==1.19.0
 
       - name: Run pytest
         run: pytest tests/ -v --tb=short
