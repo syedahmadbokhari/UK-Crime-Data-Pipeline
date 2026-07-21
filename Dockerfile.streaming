@@ -1,0 +1,13 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir \
+    pandas duckdb boto3 loguru python-dotenv python-dateutil \
+    kafka-python great_expectations==1.19.0
+
+COPY streaming/ ./streaming/
+COPY data_quality/ ./data_quality/
+COPY great_expectations/ ./great_expectations/
+COPY warehouse/ ./warehouse/
+COPY ingestion/ ./ingestion/

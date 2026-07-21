@@ -1,5 +1,35 @@
 version: '3.8'
 
+# Streaming services (kafka, streaming-producer, streaming-consumer) all carry
+# `profiles: ["streaming"]` below, so `docker-compose up` (no profile) starts
+# exactly what it always has — the batch/Airflow stack — unchanged. The
+# streaming path is opt-in via `docker-compose --profile streaming up`; see
+# the "Real-Time Streaming (Kafka)" section in README.md.
+x-streaming-common: &streaming-common
+  build:
+    context: .
+    dockerfile: Dockerfile.streaming
+  environment:
+    KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    KAFKA_TOPIC: crime-reports
+    DUCKDB_PATH: /app/warehouse/crime.duckdb
+    RAW_DATA_DIR: /app/data/raw
+    REJECTED_DATA_DIR: /app/data/rejected
+    # S3 upload is best-effort here, same "no AWS needed to start" philosophy
+    # as Quick Start step 3 — leave S3_BUCKET_NAME unset to run Kafka +
+    # DuckDB only. See streaming/consumer.py.
+    S3_BUCKET_NAME: ${S3_BUCKET_NAME:-}
+    AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+    AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-eu-west-2}
+  volumes:
+    - ./data:/app/data
+    - ./warehouse:/app/warehouse
+  depends_on:
+    kafka:
+      condition: service_healthy
+  profiles: ["streaming"]
+
 x-airflow-common: &airflow-common
   image: apache/airflow:2.8.0-python3.11
   environment:
@@ -119,6 +149,50 @@ services:
       timeout: 3s
       retries: 5
 
+  # --- Streaming (opt-in: docker-compose --profile streaming up) ----------
+  # Single-node Kafka in KRaft mode (no Zookeeper) — the modern, officially
+  # supported setup since Kafka 3.7's apache/kafka image, and one fewer
+  # container than a Zookeeper-based setup for a single-broker demo.
+  kafka:
+    image: apache/kafka:latest
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,PLAINTEXT_HOST://:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    ports:
+      - "29092:29092"   # host access, e.g. running producer.py/consumer.py outside Docker
+    volumes:
+      - kafka-data:/tmp/kraft-combined-logs
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    profiles: ["streaming"]
+
+  # One-shot: publishes a CSV's rows to Kafka one message at a time, then
+  # exits (see streaming/producer.py). Re-run with `docker-compose --profile
+  # streaming run streaming-producer` to stream another force/month.
+  streaming-producer:
+    <<: *streaming-common
+    command: ["python", "-m", "streaming.producer", "--force", "west-yorkshire", "--month", "2026-02"]
+
+  # Long-running: consumes crime-reports, validates each micro-batch with the
+  # same Great Expectations suite the batch pipeline uses, and writes to
+  # DuckDB (+ S3 if configured). See streaming/consumer.py.
+  streaming-consumer:
+    <<: *streaming-common
+    command: ["python", "-m", "streaming.consumer"]
+
   crime-api:
     build:
       context: ./api
@@ -145,3 +219,4 @@ volumes:
   postgres-db:
   airflow-logs:
   crimes-api-db:
+  kafka-data:

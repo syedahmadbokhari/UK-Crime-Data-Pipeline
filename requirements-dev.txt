@@ -30,6 +30,9 @@ moto==5.0.0           # Mock AWS S3 for tests
 # Data Quality
 great_expectations==1.19.0
 
+# Streaming
+kafka-python==3.0.8
+
 # Utilities
 python-dotenv==1.0.0
 requests==2.31.0

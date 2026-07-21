@@ -86,8 +86,10 @@ CI/CD:         GitHub Actions — pytest + dbt compile on every push
 | Mart: hotspots | [dbt_crime/models/marts/crime_hotspots.sql](dbt_crime/models/marts/crime_hotspots.sql) | LSOA centroid + crime breakdown + High/Medium/Low tier |
 | DAG | [dags/crime_pipeline_dag.py](dags/crime_pipeline_dag.py) | 9-task Airflow DAG with validation gates and watermark update |
 | Data Quality | [data_quality/validate_raw_crimes.py](data_quality/validate_raw_crimes.py) | Great Expectations suite for raw.crimes, run as a DAG task |
+| Streaming Producer | [streaming/producer.py](streaming/producer.py) | Publishes a CSV's rows to Kafka one at a time, with pacing |
+| Streaming Consumer | [streaming/consumer.py](streaming/consumer.py) | Micro-batches, validates via the same GE suite, writes to DuckDB/S3 |
 | Dashboard | [dashboard/app.py](dashboard/app.py) | Streamlit: trends, breakdown, Folium map, force comparison |
-| Tests | [tests/](tests/) | 30+ pytest tests — mocked S3, in-memory DuckDB, GE suite |
+| Tests | [tests/](tests/) | 40+ pytest tests — mocked S3/Kafka, in-memory DuckDB, GE suite |
 | CI | [.github/workflows/ci.yml](.github/workflows/ci.yml) | pytest + dbt compile on push |
 
 ---
@@ -130,6 +132,7 @@ CI/CD:         GitHub Actions — pytest + dbt compile on every push
 | REST API | FastAPI + SQLAlchemy | JWT-authenticated endpoints, deployed on Railway |
 | IaC | Terraform | Provisions the S3 bucket + least-privilege IAM, replacing manual console setup |
 | Data Quality | Great Expectations | Formalizes the pipeline's hand-written validation into an Expectation Suite + Data Docs |
+| Streaming | Kafka (KRaft) + kafka-python | Producer/consumer architecture demo — see honesty note below |
 
 ---
 
@@ -277,6 +280,73 @@ bare row-count check.
 
 ---
 
+## Real-Time Streaming (Kafka)
+
+**What this is honest about, up front:** UK Police crime data is published by data.police.uk as
+monthly batch snapshots (see [Data Source](#data-source) below) — nothing about this data is
+naturally real-time. This section adds a genuine Kafka producer/consumer pipeline as an
+**architecture demonstration**, using that same batch-published data as a stand-in event source. It
+is not a claim that crime reports arrive at data.police.uk in real time — they don't. Streaming
+skills built on realistically batch-published data and stated plainly as such is a legitimate,
+common portfolio approach; implying otherwise wouldn't be.
+
+### What it adds, and why it's a separate path from the batch pipeline
+
+- **[streaming/producer.py](streaming/producer.py)** reads the same local CSVs
+  [ingestion/upload_to_s3.py](ingestion/upload_to_s3.py) uploads in bulk, but publishes each row as
+  its own Kafka message, one at a time, with a small delay between sends (`STREAM_DELAY_SECONDS`,
+  default 0.1s) — genuinely incremental arrival, not a bulk publish disguised as streaming.
+- **[streaming/consumer.py](streaming/consumer.py)** subscribes to the topic and buffers incoming
+  records into small micro-batches (`STREAMING_BATCH_SIZE`, default 20 — flushed early after
+  `STREAMING_FLUSH_INTERVAL_SECONDS`, default 15s, if the topic is quiet). Each micro-batch is
+  validated with the **exact same Great Expectations suite** the batch pipeline uses
+  ([data_quality/validate_raw_crimes.py](data_quality/validate_raw_crimes.py)'s `build_suite()`,
+  reused unmodified — just under a streaming-scoped suite name and a batch-size-appropriate row-count
+  threshold, since a single record can't meaningfully satisfy a uniqueness/row-count check written for
+  a whole partition). Valid batches are staged as a CSV and hand off to the **same**
+  `warehouse.setup_duckdb.load_local_csv` and `ingestion.upload_to_s3.upload_file` functions the batch
+  pipeline calls — one write path, not two to keep in sync.
+- **Invalid batches are never silently dropped.** This project already found a silent-drop bug once
+  (a `WHERE ... IS NOT NULL` filter quietly dropping bad rows in
+  [stg_crimes.sql](dbt_crime/models/staging/stg_crimes.sql) — see the Data Quality section above) and
+  deliberately doesn't repeat it here: a micro-batch that fails validation is written whole to
+  `data/rejected/` and logged with the specific failed expectations, not discarded.
+- **Offset handling:** the consumer commits Kafka offsets manually
+  (`enable_auto_commit=False`), only after a micro-batch's outcome — written or rejected — is durable.
+  If the consumer crashes mid-batch, restarting resumes from the last committed offset and re-consumes
+  the unflushed messages (at-least-once delivery). Replaying a micro-batch after a crash is safe here
+  specifically because `load_local_csv`'s `INSERT ... WHERE NOT EXISTS` already dedups on
+  `(crime_id, month, force)` — reprocessing doesn't create duplicate rows.
+
+**This is additive, not a replacement.** The Airflow DAG, dbt models, and batch ingestion scripts are
+completely unchanged — Kafka is a second, independent path into the same DuckDB warehouse (and S3
+layout), not a rework of the first one.
+
+### Running it
+
+Kafka only starts when you ask for it — plain `docker-compose up` behaves exactly as before, with no
+Kafka container at all:
+
+```bash
+# Kafka (KRaft mode — no Zookeeper) + producer (one-shot) + consumer (long-running)
+docker-compose --profile streaming up
+
+# Or drive it by hand once Kafka is up:
+docker-compose --profile streaming run --rm streaming-producer \
+    python -m streaming.producer --force west-yorkshire --month 2026-02
+docker-compose --profile streaming run --rm streaming-consumer \
+    python -m streaming.consumer --max-messages 200
+```
+
+Why KRaft instead of Zookeeper: it's the modern, officially-supported single-binary setup (Kafka ≥
+3.7's `apache/kafka` image), and one fewer container than a Zookeeper-based broker for a single-node
+demo — see the `kafka` service in [docker-compose.yml](docker-compose.yml) for the exact config.
+
+Watch it work: `docker-compose --profile streaming logs -f streaming-consumer` shows each micro-batch
+being validated and written (or rejected) as the producer publishes.
+
+---
+
 ## Running Tests
 
 ```bash
@@ -292,6 +362,9 @@ Tests cover:
 - Incremental load across multiple forces
 - The Great Expectations suite catching malformed categories, unknown forces, out-of-range
   coordinates, and duplicate crime IDs against synthetic data (no real DuckDB/AWS needed)
+- Kafka producer/consumer logic — message publishing, micro-batch validation, DuckDB/S3 writes,
+  rejected-batch routing, and offset commit timing — against in-process fake Kafka clients (no live
+  broker needed, same spirit as the moto-mocked S3 tests)
 
 ---
 

@@ -29,6 +29,9 @@ airflow.cfg
 # Data files (raw CSVs — commit schema only, not bulk data)
 data/raw/*.csv
 
+# Streaming runtime output (staged micro-batch CSVs + quarantined bad batches)
+data/rejected/*.csv
+
 # Duplicate data folder created by data.police.uk download
 2026-02/
 

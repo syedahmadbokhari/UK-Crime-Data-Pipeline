@@ -82,9 +82,16 @@ UK_LATITUDE_RANGE = (49.86, 60.86)
 REQUIRED_COLUMNS = ["crime_id", "month", "force", "crime_type", "longitude", "latitude"]
 
 
-def build_suite() -> ExpectationSuite:
+def build_suite(name: str = SUITE_NAME, min_row_count: int = 100) -> ExpectationSuite:
     """
     Build the Expectation Suite for raw.crimes.
+
+    name/min_row_count are parameterized so a different calling context can
+    reuse this exact set of expectations against a differently-sized batch
+    without redefining any of them — see streaming/consumer.py, which
+    validates small Kafka micro-batches (tens of rows, not a whole
+    force+month partition) under a separate suite name so it doesn't
+    overwrite the batch pipeline's persisted suite/checkpoint on disk.
 
     FORMALIZES EXISTING CHECKS (already enforced elsewhere in the codebase;
     the two not-null checks are also *strengthened* here, since today they
@@ -112,9 +119,9 @@ def build_suite() -> ExpectationSuite:
         but nothing has ever asserted it explicitly. Nulls (legitimate for
         Anti-social behaviour rows, which have no Crime ID) are excluded.
     """
-    suite = ExpectationSuite(name=SUITE_NAME)
+    suite = ExpectationSuite(name=name)
 
-    suite.add_expectation(gx.expectations.ExpectTableRowCountToBeBetween(min_value=100))
+    suite.add_expectation(gx.expectations.ExpectTableRowCountToBeBetween(min_value=min_row_count))
 
     for column in REQUIRED_COLUMNS:
         suite.add_expectation(gx.expectations.ExpectColumnToExist(column=column))
@@ -155,13 +162,24 @@ def get_context(gx_root: Path = GX_ROOT):
     return gx.get_context(mode="file", context_root_dir=gx_root)
 
 
-def ensure_checkpoint(context) -> gx.Checkpoint:
+def ensure_checkpoint(
+    context,
+    suite_name: str = SUITE_NAME,
+    min_row_count: int = 100,
+    checkpoint_name: str = CHECKPOINT_NAME,
+    validation_definition_name: str = VALIDATION_DEFINITION_NAME,
+) -> gx.Checkpoint:
     """
     Idempotently (re)create the suite/datasource/checkpoint from build_suite()
     above. Safe to call on every run — add_or_update means an unchanged suite
     is a no-op, and a suite that has been edited in code gets synced to disk.
+
+    The pandas datasource/asset/batch-definition (ASSET_NAME,
+    BATCH_DEFINITION_NAME) are shared plumbing — just "how to hand GX a
+    dataframe" — and stay the same regardless of which suite validates it, so
+    only the suite/checkpoint/validation-definition names are parameterized.
     """
-    suite = context.suites.add_or_update(build_suite())
+    suite = context.suites.add_or_update(build_suite(name=suite_name, min_row_count=min_row_count))
 
     data_source = context.data_sources.add_or_update_pandas(DATASOURCE_NAME)
     if ASSET_NAME in data_source.get_asset_names():
@@ -175,12 +193,12 @@ def ensure_checkpoint(context) -> gx.Checkpoint:
         batch_definition = data_asset.add_batch_definition_whole_dataframe(BATCH_DEFINITION_NAME)
 
     validation_definition = context.validation_definitions.add_or_update(
-        gx.ValidationDefinition(name=VALIDATION_DEFINITION_NAME, data=batch_definition, suite=suite)
+        gx.ValidationDefinition(name=validation_definition_name, data=batch_definition, suite=suite)
     )
 
     checkpoint = context.checkpoints.add_or_update(
         gx.Checkpoint(
-            name=CHECKPOINT_NAME,
+            name=checkpoint_name,
             validation_definitions=[validation_definition],
             actions=[gx.checkpoint.UpdateDataDocsAction(name="update_data_docs")],
         )
@@ -188,14 +206,32 @@ def ensure_checkpoint(context) -> gx.Checkpoint:
     return checkpoint
 
 
-def validate_dataframe(df: pd.DataFrame, gx_root: Path = GX_ROOT):
+def validate_dataframe(
+    df: pd.DataFrame,
+    gx_root: Path = GX_ROOT,
+    suite_name: str = SUITE_NAME,
+    min_row_count: int = 100,
+    checkpoint_name: str = CHECKPOINT_NAME,
+    validation_definition_name: str = VALIDATION_DEFINITION_NAME,
+):
     """
-    Run the raw_crimes Expectation Suite against df and return the
-    CheckpointResult. Raises no exception on failed expectations — callers
-    (the Airflow task, tests) decide what to do with result.success.
+    Run an Expectation Suite against df and return the CheckpointResult.
+    Raises no exception on failed expectations — callers (the Airflow task,
+    the streaming consumer, tests) decide what to do with result.success.
+
+    Defaults reproduce the exact batch-pipeline behavior this function has
+    always had. Pass the streaming-scoped names/threshold (see
+    streaming/consumer.py) to validate a Kafka micro-batch with the same
+    expectations under a separate suite/checkpoint instead.
     """
     context = get_context(gx_root)
-    checkpoint = ensure_checkpoint(context)
+    checkpoint = ensure_checkpoint(
+        context,
+        suite_name=suite_name,
+        min_row_count=min_row_count,
+        checkpoint_name=checkpoint_name,
+        validation_definition_name=validation_definition_name,
+    )
     return checkpoint.run(batch_parameters={"dataframe": df})
 
 
